@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whisker Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF7EF;
+    --card:#FFFFFF;
+    --ink:#4B3F52;
+    --ink-soft:#948699;
+    --line: rgba(75,63,82,0.10);
+
+    --work:#C9BBE6; --work-deep:#8B72B8; --work-tint:#F3EFFB;
+    --break:#B3E3D0; --break-deep:#5FA988; --break-tint:#EEFAF4;
+    --play:#F7B7C8; --play-deep:#E17E97; --play-tint:#FDF0F3;
+
+    --gold:#F2C169;
+    --shadow: 0 10px 30px rgba(75,63,82,0.10);
+    --radius-lg: 26px;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 8%, #FBEFE0 0%, transparent 45%),
+      radial-gradient(circle at 88% 92%, #EAF3EE 0%, transparent 40%),
+      var(--cream);
+    font-family:'Quicksand', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+
+  .app{
+    width:100%;
+    max-width:720px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 18px;
+  }
+
+  header h1{
+    font-family:'Fredoka', sans-serif;
+    font-weight:700;
+    font-size: clamp(28px, 5vw, 38px);
+    margin: 0 0 4px;
+    letter-spacing: 0.2px;
+  }
+
+  header h1 .ear-icon{
+    display:inline-block;
+    transform: translateY(1px);
+  }
+
+  header p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+
+  /* ---------- Big session clock ---------- */
+  .clock-panel{
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+    margin: 22px 0 18px;
+    text-align:center;
+    border: 1px solid var(--line);
+    transition: box-shadow .25s ease;
+  }
+
+  .big-timer{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size: clamp(40px, 9vw, 58px);
+    line-height:1;
+    letter-spacing: 1px;
+    color: var(--ink);
+    transition: color .3s ease;
+  }
+
+  .mode-label{
+    margin-top:8px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size: 15px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .mode-label .dot{
+    display:inline-block;
+    width:8px; height:8px;
+    border-radius:50%;
+    margin-right:7px;
+    background: var(--ink-soft);
+    position:relative; top:-1px;
+  }
+
+  .mode-label.pulsing .dot{
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse{
+    0%,100%{ opacity:1; transform: scale(1); }
+    50%{ opacity:.45; transform: scale(1.25); }
+  }
+
+  /* ---------- Mode switch row ---------- */
+  .mode-switch{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-bottom: 26px;
+  }
+
+  .switch-btn{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    border:none;
+    border-radius: 999px;
+    padding: 11px 20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    box-shadow: 0 2px 8px rgba(75,63,82,0.06);
+    transition: transform .15s ease, box-shadow .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+  }
+
+  .switch-btn:hover{ transform: translateY(-1px); }
+  .switch-btn:active{ transform: translateY(0px) scale(0.98); }
+
+  .switch-btn:focus-visible{
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .switch-btn[data-mode="work"].is-active{ background: var(--work); color:#fff; border-color: var(--work-deep); }
+  .switch-btn[data-mode="break"].is-active{ background: var(--break); color:#fff; border-color: var(--break-deep); }
+  .switch-btn[data-mode="play"].is-active{ background: var(--play); color:#fff; border-color: var(--play-deep); }
+
+  .pause-btn{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    border:none;
+    border-radius:999px;
+    padding:11px 18px;
+    cursor:pointer;
+    background: var(--ink);
+    color:#fff;
+    opacity:0.85;
+    transition: opacity .2s ease, transform .15s ease;
+  }
+  .pause-btn:hover{ opacity:1; transform: translateY(-1px); }
+  .pause-btn:focus-visible{ outline: 3px solid var(--gold); outline-offset: 2px; }
+  .pause-btn[hidden]{ display:none; }
+
+  /* ---------- Tubes ---------- */
+  .tubes{
+    display:flex;
+    gap: 16px;
+    justify-content:center;
+    align-items:flex-end;
+    flex-wrap:wrap;
+  }
+
+  .tube-card{
+    flex: 1 1 150px;
+    max-width: 190px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 26px 14px 16px;
+    cursor:pointer;
+    text-align:center;
+    font-family:inherit;
+    color:inherit;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .2s ease;
+  }
+
+  .tube-card:hover{ transform: translateY(-3px); }
+  .tube-card:focus-visible{ outline: 3px solid var(--gold); outline-offset: 3px; }
+
+  .tube-card[data-mode="work"].is-active{ border-color: var(--work-deep); box-shadow: 0 10px 26px rgba(139,114,184,0.25); }
+  .tube-card[data-mode="break"].is-active{ border-color: var(--break-deep); box-shadow: 0 10px 26px rgba(95,169,136,0.22); }
+  .tube-card[data-mode="play"].is-active{ border-color: var(--play-deep); box-shadow: 0 10px 26px rgba(225,126,151,0.22); }
+
+  .tube-jar{
+    position:relative;
+    width: 78px;
+    height: 168px;
+    margin: 0 auto 14px;
+  }
+
+  .ear{
+    position:absolute;
+    top:-11px;
+    width:0; height:0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-bottom: 18px solid var(--ink-soft);
+    opacity:0.55;
+  }
+  .ear-left{ left:2px; transform: rotate(-18deg); }
+  .ear-right{ right:2px; transform: rotate(18deg); }
+
+  .tube-card[data-mode="work"] .ear{ border-bottom-color: var(--work-deep); }
+  .tube-card[data-mode="break"] .ear{ border-bottom-color: var(--break-deep); }
+  .tube-card[data-mode="play"] .ear{ border-bottom-color: var(--play-deep); }
+
+  .tube-glass{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius: 16px 16px 34px 34px;
+    background: rgba(75,63,82,0.045);
+    border: 2px solid rgba(75,63,82,0.12);
+    overflow:hidden;
+  }
+
+  .sand-fill{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:0%;
+    border-radius: 0 0 30px 30px;
+    transition: height 0.8s cubic-bezier(.4,1.4,.6,1);
+  }
+
+  .tube-card[data-mode="work"] .sand-fill{ background: linear-gradient(180deg, var(--work) 0%, var(--work-deep) 100%); }
+  .tube-card[data-mode="break"] .sand-fill{ background: linear-gradient(180deg, var(--break) 0%, var(--break-deep) 100%); }
+  .tube-card[data-mode="play"] .sand-fill{ background: linear-gradient(180deg, var(--play) 0%, var(--play-deep) 100%); }
+
+  .sand-fall{
+    position:absolute;
+    top:6px; left:50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 100%;
+    display:none;
+  }
+  .tube-card.is-active .sand-fall{ display:block; }
+
+  .sand-fall span{
+    position:absolute;
+    left:50%;
+    top:-8px;
+    width:4px; height:4px;
+    border-radius:50%;
+    background: var(--gold);
+    transform: translateX(-50%);
+    animation: fall 0.9s linear infinite;
+  }
+  .sand-fall span:nth-child(2){ animation-delay: .3s; left:35%; }
+  .sand-fall span:nth-child(3){ animation-delay: .6s; left:65%; }
+
+  @keyframes fall{
+    0%{ top:-8px; opacity:0; }
+    15%{ opacity:1; }
+    85%{ opacity:1; }
+    100%{ top: 92%; opacity:0; }
+  }
+
+  .tube-label{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    margin-bottom: 2px;
+  }
+
+  .tube-total{
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Goal line (on work tube) + goal bar (footer) ---------- */
+  .goal-line{
+    position:absolute;
+    left:0; right:0;
+    height:2px;
+    background: var(--gold);
+    box-shadow: 0 0 3px rgba(242,193,105,0.9);
+    opacity:0.8;
+    pointer-events:none;
+  }
+  .goal-line.goal-met{
+    height:3px;
+    box-shadow: 0 0 8px rgba(242,193,105,1);
+    opacity:1;
+  }
+
+  .goal-bar{
+    margin-top: 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap: 8px;
+    font-size: 13.5px;
+  }
+
+  .goal-bar label{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    color: var(--ink-soft);
+  }
+
+  .goal-bar select{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .goal-bar select:focus-visible{ outline: 2px solid var(--gold); }
+
+  .goal-status{
+    color: var(--ink-soft);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+  }
+  .goal-status.goal-reached{ color: var(--work-deep); font-weight:600; }
+
+  /* ---------- Reminder banner ---------- */
+  .reminder{
+    margin-top: 20px;
+    background: #FDF3DC;
+    border: 1px solid #EFD79B;
+    border-radius: 16px;
+    padding: 14px 18px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:14.5px;
+    animation: slidein .35s ease;
+  }
+  .reminder[hidden]{ display:none; }
+
+  @keyframes slidein{
+    from{ opacity:0; transform: translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .reminder span.txt{ flex:1; }
+
+  .reminder button{
+    border:none;
+    background:transparent;
+    font-size:18px;
+    cursor:pointer;
+    color: var(--ink-soft);
+    line-height:1;
+    padding:4px;
+  }
+  .reminder button:focus-visible{ outline: 2px solid var(--gold); }
+
+  /* ---------- Footer ---------- */
+  .footer{
+    margin-top: 26px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+
+  .footer .today-total{
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  .footer-btns{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  #resetBtn, #exportBtn, #importBtn{
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    background:none;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor:pointer;
+    color: var(--ink-soft);
+    transition: all .2s ease;
+  }
+  #resetBtn:hover{ border-color: var(--play-deep); color: var(--play-deep); }
+  #resetBtn:focus-visible, #exportBtn:focus-visible, #importBtn:focus-visible{ outline: 2px solid var(--gold); }
+  #resetBtn.confirming{ background: var(--play-tint); border-color: var(--play-deep); color: var(--play-deep); }
+  #exportBtn:hover, #importBtn:hover{ border-color: var(--work-deep); color: var(--work-deep); }
+
+  .storage-note{
+    text-align:center;
+    font-size:12px;
+    color: var(--ink-soft);
+    opacity:0.75;
+    margin-top: 14px;
+  }
+
+  .data-status{
+    text-align:center;
+    font-size:13px;
+    min-height: 18px;
+    margin-top: 10px;
+    color: var(--break-deep);
+  }
+  .data-status.is-error{ color: var(--play-deep); }
+
+  /* ---------- History panel ---------- */
+  .history-details{
+    margin-top: 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 4px 16px;
+  }
+  .history-details summary{
+    cursor:pointer;
+    list-style:none;
+    padding: 12px 0;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color: var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .history-details summary::-webkit-details-marker{ display:none; }
+  .history-details summary::after{
+    content:'▾';
+    margin-left:auto;
+    transition: transform .2s ease;
+  }
+  .history-details[open] summary::after{ transform: rotate(180deg); }
+
+  .history-list{
+    max-height: 220px;
+    overflow-y:auto;
+    padding-bottom: 12px;
+  }
+
+  .history-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding: 8px 4px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    flex-wrap:wrap;
+  }
+  .history-row .h-date{
+    font-family:'JetBrains Mono', monospace;
+    color: var(--ink);
+    min-width: 92px;
+  }
+  .history-row .h-vals span{ margin-left:10px; white-space:nowrap; }
+  .history-row .h-vals .w{ color: var(--work-deep); }
+  .history-row .h-vals .b{ color: var(--break-deep); }
+  .history-row .h-vals .p{ color: var(--play-deep); }
+
+  .history-empty{
+    padding: 10px 4px 14px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .sand-fall span{ animation: none; opacity:0; }
+    .mode-label.pulsing .dot{ animation: none; }
+    .sand-fill{ transition: none; }
+    .reminder{ animation: none; }
+  }
+
+  @media (max-width: 480px){
+    .tube-card{ padding: 20px 8px 12px; }
+    .tube-jar{ width: 64px; height: 140px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1><span class="ear-icon">🐾</span> Whisker Timer</h1>
+    <p>watch the sand fall, see where your day actually goes</p>
+  </header>
+
+  <div class="clock-panel">
+    <div class="big-timer" id="bigTimer">00:00:00</div>
+    <div class="mode-label" id="modeLabel"><span class="dot"></span>Paused — pick a mode below</div>
+  </div>
+
+  <div class="mode-switch">
+    <button class="switch-btn" data-mode="work" id="btn-work">🐱 Work</button>
+    <button class="switch-btn" data-mode="break" id="btn-break">🐟 Break</button>
+    <button class="switch-btn" data-mode="play" id="btn-play">🧶 Play</button>
+    <button class="pause-btn" id="pauseBtn" hidden>⏸ Pause</button>
+  </div>
+
+  <div class="tubes">
+    <button class="tube-card" data-mode="work">
+      <div class="tube-jar">
+        <span class="ear ear-left"></span><span class="ear ear-right"></span>
+        <div class="tube-glass">
+          <div class="sand-fill" id="fill-work"></div>
+          <div class="goal-line" id="goalLine" hidden></div>
+          <div class="sand-fall"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="tube-label">Work</div>
+      <div class="tube-total" id="total-work">0h 00m 00s</div>
+    </button>
+
+    <button class="tube-card" data-mode="break">
+      <div class="tube-jar">
+        <span class="ear ear-left"></span><span class="ear ear-right"></span>
+        <div class="tube-glass">
+          <div class="sand-fill" id="fill-break"></div>
+          <div class="sand-fall"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="tube-label">Break</div>
+      <div class="tube-total" id="total-break">0h 00m 00s</div>
+    </button>
+
+    <button class="tube-card" data-mode="play">
+      <div class="tube-jar">
+        <span class="ear ear-left"></span><span class="ear ear-right"></span>
+        <div class="tube-glass">
+          <div class="sand-fill" id="fill-play"></div>
+          <div class="sand-fall"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="tube-label">Play</div>
+      <div class="tube-total" id="total-play">0h 00m 00s</div>
+    </button>
+  </div>
+
+  <div class="reminder" id="reminder" hidden>
+    <span>🐾</span>
+    <span class="txt" id="reminderText"></span>
+    <button id="reminderClose" aria-label="Dismiss reminder">×</button>
+  </div>
+
+  <div class="footer">
+    <span>Today's total: <span class="today-total" id="todayTotal">0h 00m</span></span>
+    <div class="footer-btns">
+      <button id="exportBtn">⬇ Export</button>
+      <button id="importBtn">⬆ Import</button>
+      <button id="resetBtn">Reset today</button>
+    </div>
+  </div>
+
+  <div class="goal-bar">
+    <label for="goalSelect">🎯 Today's work goal</label>
+    <select id="goalSelect" aria-label="Set today's work goal in hours">
+      <option value="">No goal</option>
+      <option value="1">1h</option>
+      <option value="2">2h</option>
+      <option value="3">3h</option>
+      <option value="4">4h</option>
+      <option value="5">5h</option>
+      <option value="6">6h</option>
+      <option value="7">7h</option>
+      <option value="8">8h</option>
+      <option value="9">9h</option>
+      <option value="10">10h</option>
+      <option value="11">11h</option>
+      <option value="12">12h</option>
+    </select>
+    <span class="goal-status" id="goalStatus"></span>
+  </div>
+
+  <input type="file" id="importFile" accept=".txt,text/plain" hidden>
+  <p class="data-status" id="dataStatus"></p>
+
+  <details class="history-details">
+    <summary>📜 Past days</summary>
+    <div class="history-list" id="historyList"></div>
+  </details>
+
+  <p class="storage-note" id="storageNote"></p>
+
+</div>
+
+<script>
+(function(){
+  const MODES = ['work','break','play'];
+  const MODE_NAMES = { work:'Work', break:'Break', play:'Play' };
+  const MODE_EMOJI = { work:'🐱', break:'🐟', play:'🧶' };
+
+  const STORAGE_KEY = 'whisker-timer-state-v1';
+  const HISTORY_KEY = 'whisker-timer-history-v1';
+  const GOAL_KEY = 'whisker-timer-goal-v1';
+  let storageAvailable = false;
+
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  let state = {
+    date: todayStr(),
+    totals: { work:0, break:0, play:0 }, // seconds, completed sessions only
+    activeMode: null,
+    activeStart: null // ms epoch
+  };
+
+  let history = []; // [{date, work, break, play}] seconds, one entry per past day
+  let goal = { work: null }; // goal in HOURS, per mode (only "work" is exposed in the UI for now)
+
+  let dismissedReminders = {}; // reset whenever mode changes
+
+  // ---------- persistence ----------
+  async function loadState(){
+    try{
+      if(!window.storage) throw new Error('no storage api');
+      const res = await window.storage.get(STORAGE_KEY);
+      storageAvailable = true;
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        if(parsed && parsed.date === todayStr()){
+          state = parsed;
+        } else {
+          state = { date: todayStr(), totals:{work:0,break:0,play:0}, activeMode:null, activeStart:null };
+        }
+      }
+      document.getElementById('storageNote').textContent = "Your time is saved automatically in this browser.";
+    }catch(e){
+      storageAvailable = false;
+      document.getElementById('storageNote').textContent = "Running without saving — totals reset if you close this tab. (Use Export before closing to keep a backup!)";
+    }
+
+    try{
+      if(window.storage){
+        const res = await window.storage.get(HISTORY_KEY);
+        if(res && res.value){
+          history = JSON.parse(res.value);
+        }
+      }
+    }catch(e){ /* no history saved yet, keep [] */ }
+
+    try{
+      if(window.storage){
+        const res = await window.storage.get(GOAL_KEY);
+        if(res && res.value){
+          goal = JSON.parse(res.value);
+        }
+      }
+    }catch(e){ /* no goal saved yet, keep default */ }
+
+    renderAll();
+    renderHistoryList();
+  }
+
+  async function saveState(){
+    if(!storageAvailable) return;
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){ /* fail silently, non-critical */ }
+  }
+
+  async function saveHistory(){
+    if(!storageAvailable) return;
+    try{
+      await window.storage.set(HISTORY_KEY, JSON.stringify(history));
+    }catch(e){ /* fail silently, non-critical */ }
+  }
+
+  async function saveGoal(){
+    if(!storageAvailable) return;
+    try{
+      await window.storage.set(GOAL_KEY, JSON.stringify(goal));
+    }catch(e){ /* fail silently, non-critical */ }
+  }
+
+  // Adds/overwrites one day's totals into the history log (most recent last)
+  function archiveDay(dateStr, totals){
+    if(totals.work < 1 && totals.break < 1 && totals.play < 1) return; // skip empty days
+    const idx = history.findIndex(h => h.date === dateStr);
+    const entry = { date: dateStr, work: Math.round(totals.work), break: Math.round(totals.break), play: Math.round(totals.play) };
+    if(idx >= 0){ history[idx] = entry; } else { history.push(entry); }
+    history.sort((a,b) => (a.date < b.date ? -1 : (a.date > b.date ? 1 : 0)));
+    saveHistory();
+  }
+
+  // ---------- time helpers ----------
+  function liveSeconds(mode){
+    let s = state.totals[mode];
+    if(state.activeMode === mode && state.activeStart){
+      s += (Date.now() - state.activeStart) / 1000;
+    }
+    return s;
+  }
+
+  function fmtHHMMSS(totalSeconds){
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const hh = String(Math.floor(s/3600)).padStart(2,'0');
+    const mm = String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    return hh+':'+mm+':'+ss;
+  }
+
+  function fmtHM(totalSeconds){
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const h = Math.floor(s/3600);
+    const m = Math.floor((s%3600)/60);
+    return h+'h '+String(m).padStart(2,'0')+'m';
+  }
+
+  function fmtHMS(totalSeconds){
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const h = Math.floor(s/3600);
+    const m = Math.floor((s%3600)/60);
+    const sec = s%60;
+    return h+'h '+String(m).padStart(2,'0')+'m '+String(sec).padStart(2,'0')+'s';
+  }
+
+  // ---------- actions ----------
+  function switchMode(newMode){
+    const now = Date.now();
+    if(state.activeMode && state.activeStart){
+      state.totals[state.activeMode] += (now - state.activeStart) / 1000;
+    }
+    if(state.activeMode === newMode){
+      state.activeMode = null;
+      state.activeStart = null;
+    } else {
+      state.activeMode = newMode;
+      state.activeStart = now;
+    }
+    dismissedReminders = {};
+    saveState();
+    renderAll();
+  }
+
+  function pauseActive(){
+    if(!state.activeMode) return;
+    state.totals[state.activeMode] += (Date.now() - state.activeStart) / 1000;
+    state.activeMode = null;
+    state.activeStart = null;
+    dismissedReminders = {};
+    saveState();
+    renderAll();
+  }
+
+  let resetArmed = false;
+  function handleReset(){
+    const btn = document.getElementById('resetBtn');
+    if(!resetArmed){
+      resetArmed = true;
+      btn.textContent = 'Click again to confirm';
+      btn.classList.add('confirming');
+      setTimeout(()=>{
+        if(resetArmed){
+          resetArmed = false;
+          btn.textContent = 'Reset today';
+          btn.classList.remove('confirming');
+        }
+      }, 3500);
+      return;
+    }
+    resetArmed = false;
+    btn.textContent = 'Reset today';
+    btn.classList.remove('confirming');
+    state = { date: todayStr(), totals:{work:0,break:0,play:0}, activeMode:null, activeStart:null };
+    dismissedReminders = {};
+    saveState();
+    renderAll();
+  }
+
+  // ---------- rendering ----------
+  function renderAll(){
+    // day rollover check
+    if(state.date !== todayStr()){
+      if(state.activeMode && state.activeStart){
+        state.totals[state.activeMode] += (Date.now()-state.activeStart)/1000;
+      }
+      archiveDay(state.date, state.totals);
+      state = { date: todayStr(), totals:{work:0,break:0,play:0}, activeMode:null, activeStart:null };
+      saveState();
+      renderHistoryList();
+    }
+
+    const active = state.activeMode;
+
+    // big timer = continuous elapsed in current session
+    const bigTimer = document.getElementById('bigTimer');
+    const modeLabel = document.getElementById('modeLabel');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    if(active){
+      const elapsed = (Date.now() - state.activeStart) / 1000;
+      bigTimer.textContent = fmtHHMMSS(elapsed);
+      modeLabel.innerHTML = '<span class="dot"></span>' + MODE_EMOJI[active] + ' ' + MODE_NAMES[active] + ' — in progress';
+      modeLabel.classList.add('pulsing');
+      pauseBtn.hidden = false;
+      document.title = MODE_EMOJI[active] + ' ' + fmtHHMMSS(elapsed).slice(0,5) + ' · ' + MODE_NAMES[active];
+    } else {
+      bigTimer.textContent = '00:00:00';
+      modeLabel.innerHTML = '<span class="dot"></span>Paused — pick a mode below';
+      modeLabel.classList.remove('pulsing');
+      pauseBtn.hidden = true;
+      document.title = '🐾 Whisker Timer';
+    }
+
+    // mode switch buttons
+    MODES.forEach(m=>{
+      const b = document.getElementById('btn-'+m);
+      b.classList.toggle('is-active', active === m);
+    });
+
+    // tubes: each fills toward a fixed 12-hour reference, so the three are always
+    // directly comparable — it only stretches further if a day (or your goal) runs past that
+    const liveTotals = { work: liveSeconds('work'), break: liveSeconds('break'), play: liveSeconds('play') };
+    const goalSecs = (typeof goal.work === 'number' && goal.work > 0) ? goal.work * 3600 : 0;
+    const BASE_MAX = 12 * 3600;
+    const highest = Math.max(liveTotals.work, liveTotals.break, liveTotals.play, goalSecs);
+    const maxVal = highest > BASE_MAX ? highest * 1.08 : BASE_MAX;
+
+    MODES.forEach(m=>{
+      const pct = Math.min(100, (liveTotals[m] / maxVal) * 100);
+      document.getElementById('fill-'+m).style.height = pct + '%';
+      document.getElementById('total-'+m).textContent = fmtHMS(liveTotals[m]);
+      const card = document.querySelector('.tube-card[data-mode="'+m+'"]');
+      card.classList.toggle('is-active', active === m);
+    });
+
+    // goal line on the work tube + goal bar in the footer
+    const goalLine = document.getElementById('goalLine');
+    const goalSelect = document.getElementById('goalSelect');
+    const goalStatus = document.getElementById('goalStatus');
+    if(document.activeElement !== goalSelect){
+      goalSelect.value = (typeof goal.work === 'number' && goal.work > 0) ? String(goal.work) : '';
+    }
+    if(goalSecs > 0){
+      const goalPct = Math.min(100, (goalSecs / maxVal) * 100);
+      goalLine.style.bottom = goalPct + '%';
+      goalLine.hidden = false;
+      const reached = liveTotals.work >= goalSecs;
+      goalLine.classList.toggle('goal-met', reached);
+      goalStatus.textContent = reached ? ('✓ met! (' + fmtHM(liveTotals.work) + ')') : (fmtHM(liveTotals.work) + ' / ' + goal.work + 'h');
+      goalStatus.classList.toggle('goal-reached', reached);
+    } else {
+      goalLine.hidden = true;
+      goalStatus.textContent = '';
+      goalStatus.classList.remove('goal-reached');
+    }
+
+    const grandTotal = liveTotals.work + liveTotals.break + liveTotals.play;
+    document.getElementById('todayTotal').textContent = fmtHM(grandTotal);
+
+    // gentle reminders
+    updateReminder(active);
+  }
+
+  function renderHistoryList(){
+    const box = document.getElementById('historyList');
+    if(!history.length){
+      box.innerHTML = '<p class="history-empty">Nothing here yet — past days will appear once one finishes, or after you import a file.</p>';
+      return;
+    }
+    const rows = history.slice().reverse().map(h => {
+      return '<div class="history-row">'
+        + '<span class="h-date">' + h.date + '</span>'
+        + '<span class="h-vals">'
+        + '<span class="w">🐱 ' + fmtHM(h.work) + '</span>'
+        + '<span class="b">🐟 ' + fmtHM(h.break) + '</span>'
+        + '<span class="p">🧶 ' + fmtHM(h.play) + '</span>'
+        + '</span></div>';
+    }).join('');
+    box.innerHTML = rows;
+  }
+
+  function showStatus(msg, isError){
+    const el = document.getElementById('dataStatus');
+    el.textContent = msg;
+    el.classList.toggle('is-error', !!isError);
+    clearTimeout(showStatus._t);
+    showStatus._t = setTimeout(()=>{ el.textContent = ''; }, 6000);
+  }
+
+  // ---------- export ----------
+  function exportData(){
+    const liveTotals = { work: liveSeconds('work'), break: liveSeconds('break'), play: liveSeconds('play') };
+    const rows = history.slice();
+    rows.push({ date: state.date, work: liveTotals.work, break: liveTotals.break, play: liveTotals.play, today:true });
+
+    const pad = (s, n) => (s + ' '.repeat(n)).slice(0, n);
+    let text = '🐾 Whisker Timer — Data Export\n';
+    text += 'Exported: ' + new Date().toLocaleString() + '\n\n';
+    text += pad('Date', 13) + pad('Work', 18) + pad('Break', 18) + 'Play\n';
+    rows.forEach(r => {
+      const line = pad(r.date, 13)
+        + pad(fmtHM(r.work) + ' (' + Math.round(r.work) + 's)', 18)
+        + pad(fmtHM(r.break) + ' (' + Math.round(r.break) + 's)', 18)
+        + fmtHM(r.play) + ' (' + Math.round(r.play) + 's)'
+        + (r.today ? '   (today, in progress)' : '');
+      text += line + '\n';
+    });
+    text += '\nKeep this file safe — you can re-import it anytime with the Import button to restore this history.\n';
+
+    triggerDownload('whisker-timer-export-' + state.date + '.txt', text);
+    showStatus('Exported! Check your downloads.', false);
+  }
+
+  function triggerDownload(filename, text){
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  // ---------- import ----------
+  function parseImportText(text){
+    const re = /^(\d{4}-\d{2}-\d{2}).*?\((\d+)s\).*?\((\d+)s\).*?\((\d+)s\)/;
+    const rows = [];
+    text.split('\n').forEach(line=>{
+      const m = line.match(re);
+      if(m){
+        rows.push({ date: m[1], work: parseInt(m[2],10), break: parseInt(m[3],10), play: parseInt(m[4],10) });
+      }
+    });
+    return rows;
+  }
+
+  function handleImportFile(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const rows = parseImportText(String(e.target.result));
+      if(!rows.length){
+        showStatus("Couldn't read that file — make sure it's a Whisker Timer export.", true);
+        return;
+      }
+      let importedToday = false;
+      rows.forEach(r=>{
+        if(r.date === todayStr()){
+          if(state.activeMode) pauseActive();
+          state.totals = { work: r.work, break: r.break, play: r.play };
+          importedToday = true;
+        } else {
+          archiveDay(r.date, r);
+        }
+      });
+      saveState();
+      saveHistory();
+      renderAll();
+      renderHistoryList();
+      showStatus('Imported ' + rows.length + ' day' + (rows.length===1?'':'s') + (importedToday ? " (today's totals were replaced)" : '') + ' ✅', false);
+    };
+    reader.onerror = function(){
+      showStatus("Couldn't read that file. Try exporting a fresh copy and importing that.", true);
+    };
+    reader.readAsText(file);
+  }
+
+  const THRESHOLDS = {
+    work: { seconds: 50*60, text: "You've been focused for 50 minutes. A short break might feel good." },
+    play: { seconds: 20*60, text: "20 minutes of play so far. Still enjoying it, or ready to switch back?" },
+    break: { seconds: 20*60, text: "Break's been going a while. Whenever you're ready, work is right there." }
+  };
+
+  function updateReminder(active){
+    const box = document.getElementById('reminder');
+    const txt = document.getElementById('reminderText');
+    if(!active || dismissedReminders[active]){
+      box.hidden = true;
+      return;
+    }
+    const elapsed = (Date.now() - state.activeStart) / 1000;
+    const th = THRESHOLDS[active];
+    if(elapsed >= th.seconds){
+      txt.textContent = th.text;
+      box.hidden = false;
+    } else {
+      box.hidden = true;
+    }
+  }
+
+  document.getElementById('reminderClose').addEventListener('click', ()=>{
+    if(state.activeMode) dismissedReminders[state.activeMode] = true;
+    document.getElementById('reminder').hidden = true;
+  });
+
+  // ---------- wire up events ----------
+  MODES.forEach(m=>{
+    document.getElementById('btn-'+m).addEventListener('click', ()=>switchMode(m));
+    const card = document.querySelector('.tube-card[data-mode="'+m+'"]');
+    card.addEventListener('click', ()=>switchMode(m));
+    // the work card is a div (role="button") so it needs manual keyboard activation
+    card.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        switchMode(m);
+      }
+    });
+  });
+  document.getElementById('pauseBtn').addEventListener('click', pauseActive);
+  document.getElementById('resetBtn').addEventListener('click', handleReset);
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(file) handleImportFile(file);
+    e.target.value = ''; // allow re-importing the same filename later
+  });
+
+  // goal control — a simple dropdown, no nested-button gymnastics needed anymore
+  document.getElementById('goalSelect').addEventListener('change', (e)=>{
+    const val = e.target.value;
+    goal.work = val === '' ? null : parseFloat(val);
+    saveGoal();
+    renderAll();
+  });
+
+  // periodic save + tick
+  setInterval(()=>{ renderAll(); }, 1000);
+  setInterval(()=>{ if(state.activeMode) saveState(); }, 8000);
+  window.addEventListener('beforeunload', ()=>{ if(state.activeMode) saveState(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden' && state.activeMode) saveState(); });
+
+  loadState();
+})();
+</script>
+</body>
+</html>
