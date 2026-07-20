@@ -1,0 +1,35 @@
+[Station Title]
+[Station Link]
+[Cover Icon]
+
+Environment Ambience
+https://planetambi.radioca.st/stream
+https://media.radiospinner.com/media/logos/180/44922/logo_ueP0MdLoJd.jpg
+
+Peaceful Acoustic
+https://cast1.torontocast.com:2665/stream
+https://media.radiospinner.com/media/logos/180/88571/logo_FfMRiU1ai1.jpg
+
+Smooth Chill
+https://media-ssl.musicradio.com/SmoothChill-M-Concentration
+https://media.radiospinner.com/media/logos/180/51626/logo_xVaDIIxBjn.jpg
+
+Chill Lofi
+https://usa9.fastcast4u.com/proxy/jamz?mp=%2F1
+https://media.radiospinner.com/media/logos/180/96550/logo_dJ2rnzYJQO.jpg
+
+Creative Lofi
+https://stream.bigfm.de/lofifocus/mp3-128
+https://media.radiospinner.com/media/logos/180/29970/logo_5uQqvXYR9A.jpg
+
+Impact Lofi
+https://stream.zeno.fm/umhxwwtke0hvv
+https://media.radiospinner.com/media/logos/180/99706/logo_Lw36R8vfda.jpg
+
+Upbeat Classics
+https://jenny.torontocast.com:2000/stream/the-oasis
+https://media.radiospinner.com/media/logos/180/88710/logo_HFWp4o5QpH.jpg
+
+Orchestra Instrumental
+https://hydra.cdnstream.com/1822_128
+https://media.radiospinner.com/media/logos/180/96436/logo_TqHORFdyjx.jpg
